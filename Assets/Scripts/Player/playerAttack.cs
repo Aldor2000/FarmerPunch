@@ -59,7 +59,7 @@ public class playerAttack : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy")){
-            other.GetComponent<EnemyAle>().TakeDamage(punchDamage);
+            other.GetComponent<Enemy>().TakeDamage(punchDamage);
             Debug.Log("enemy hit");
         }
     }
