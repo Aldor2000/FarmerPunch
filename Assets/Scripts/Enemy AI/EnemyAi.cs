@@ -1,7 +1,8 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Enemy))]
-public class EnemyAI : MonoBehaviour
+public class EnemyAi : MonoBehaviour
 {
     private Enemy enemy;       // referencia a nuestro controlador
     private Transform player;
@@ -13,10 +14,6 @@ public class EnemyAI : MonoBehaviour
     private float idleTimer;
 
     private Vector2 patrolTarget;
-    // 'repathCooldown' y 'lastPatrolTime' no se usaban,
-    // los he quitado para limpiar, pero puedes volver a ponerlos
-    // si los necesitas más adelante.
-
 
     void Start()
     {
@@ -32,13 +29,10 @@ public class EnemyAI : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Si el jugador no existe, no hacemos nada.
         if (player == null)
         {
-            // Opcional: podríamos cambiar a estado 'Patrol' o 'Idle'
-            // si el jugador desaparece (ej: muere y se destruye).
-            // Por ahora, simplemente paramos la lógica.
-            enemy.StopMoving();
+            // Si el jugador desaparece, volvemos a Idle
+            SwitchState(State.Idle);
             return;
         }
 
@@ -67,7 +61,7 @@ public class EnemyAI : MonoBehaviour
 
         if (idleTimer <= 0f)
         {
-            // Simplemente cambiamos de estado
+            // Cambiamos a patrullar (SwitchState le dará un destino)
             SwitchState(State.Patrol);
         }
 
@@ -76,70 +70,60 @@ public class EnemyAI : MonoBehaviour
 
     private void HandlePatrol()
     {
-        enemy.MoveTo(patrolTarget);
-        enemy.FaceTarget(patrolTarget);
+        //DEBUG
+        float distance = Vector2.Distance(transform.position, patrolTarget);
+        Debug.Log($"[HandlePatrol] Moviendo a {patrolTarget}. Distancia restante: {distance}");
 
-        if (Vector2.Distance(transform.position, patrolTarget) < 0.5f)
+        enemy.MoveTo(patrolTarget);
+
+
+        if (Vector2.Distance(transform.position, patrolTarget) < 0.1f)
         {
-            idleTimer = idleTime;
             SwitchState(State.Idle);
         }
 
-        // Siempre intentamos detectar al jugador
         TryDetectPlayer();
     }
 
     private void HandleChase()
     {
-
-
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // ¡CORRECIÓN! Usamos 'enemy.detectRadius'
-        if (distance > enemy.detectRadius + 2f) // "Leash" o correa
+        if (distance > enemy.detectRadius + 2f) // "Leash"
         {
-            SwitchState(State.Patrol);
+            SwitchState(State.Patrol); // Ahora esto funcionará
             return;
         }
 
-        // ¡CORRECIÓN! Usamos 'enemy.attackRadius'
         if (distance <= enemy.attackRadius)
         {
             SwitchState(State.Attack);
             return;
         }
 
-        // Si no está fuera de rango ni en rango de ataque, seguimos moviéndonos
         enemy.MoveTo(player.position);
         enemy.FaceTarget(player.position);
     }
 
     private void HandleAttack()
     {
-
-
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // ¡CORRECIÓN! Usamos 'enemy.attackRadius'
         if (distance > enemy.attackRadius)
         {
             SwitchState(State.Chase);
             return;
         }
 
-        // Si estamos en rango de ataque, paramos de movernos,
-        // miramos al jugador e intentamos atacar.
         enemy.StopMoving();
         enemy.FaceTarget(player.position);
-        enemy.TryAttack(); // 'TryAttack' revisará su propio cooldown
+        enemy.TryAttack();
     }
 
     private void TryDetectPlayer()
     {
-
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // ¡CORRECIÓN! Usamos 'enemy.detectRadius'
         if (distance < enemy.detectRadius)
         {
             SwitchState(State.Chase);
@@ -153,11 +137,20 @@ public class EnemyAI : MonoBehaviour
         currentState = newState;
         Debug.Log("Switching to state: " + newState);
 
-        // Lógica de entrada al estado
+        // --- Lógica de Entrada a los Estados ---
         if (newState == State.Idle)
         {
             enemy.StopMoving();
-            idleTimer = idleTime; // Reiniciamos el timer de idle
+            idleTimer = idleTime;
+        }
+        else if (newState == State.Patrol)
+        {
+            // ¡ESTA ES LA CORRECCIÓN!
+            // Cada vez que entremos a Patrullar,
+            // obtenemos un nuevo punto aleatorio.
+            patrolTarget = enemy.GetRandomPosition();
+
+            Debug.Log($"[SwitchState] Nuevo patrolTarget elegido: {patrolTarget}. Posición actual: {transform.position}");
         }
     }
 }

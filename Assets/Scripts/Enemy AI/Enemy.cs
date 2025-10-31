@@ -33,17 +33,9 @@ public class Enemy : MonoBehaviour
 
         float distanceToTarget = Vector2.Distance(currentPos, targetPos);
 
-        // Comparamos contra la distancia al objetivo (targetPos)
-        if (distanceToTarget > stopDistance + 0.1f)
-        {
-            rb.linearVelocity = direction * moveSpeed;
-            Debug.Log("Moving toward: " + targetPos + " current: " + rb.position);
-            FaceTarget(targetPos);
-        }
-        else
-        {
-            StopMoving();
-        }
+        rb.linearVelocity = direction * moveSpeed;
+        //Debug.Log("Moving toward: " + targetPos + " current: " + rb.position);
+        FaceTarget(targetPos);
     }
 
     public void StopMoving()
